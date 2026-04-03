@@ -2,6 +2,8 @@ import React, { useCallback, useRef } from "react";
 
 type Props = {
   onFilesPicked: (files: File[]) => Promise<void>;
+  /** Called with validated files immediately (e.g. open local PDF preview). */
+  onFilesSelected?: (files: File[]) => void;
   disabled?: boolean;
 };
 
@@ -13,7 +15,7 @@ function fileExt(name: string) {
   return idx >= 0 ? lower.slice(idx) : "";
 }
 
-export default function UploadDropzone({ onFilesPicked, disabled }: Props) {
+export default function UploadDropzone({ onFilesPicked, onFilesSelected, disabled }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const pickFiles = useCallback(() => {
@@ -25,6 +27,7 @@ export default function UploadDropzone({ onFilesPicked, disabled }: Props) {
       const list = Array.from(files);
       if (!list.length) return;
       const valid = list.filter((f) => ALLOWED.has(fileExt(f.name)));
+      if (valid.length) onFilesSelected?.(valid);
       await onFilesPicked(valid);
     },
     [onFilesPicked],
@@ -58,6 +61,7 @@ export default function UploadDropzone({ onFilesPicked, disabled }: Props) {
 
       <div className="flex flex-col gap-2 items-start">
         <div className="font-medium text-slate-800">Drag & drop PDFs/DOCX here</div>
+        <div className="text-sm text-slate-600">Select or drop multiple files at once (up to server limit).</div>
         <div className="text-sm text-slate-600">Or</div>
         <button
           type="button"

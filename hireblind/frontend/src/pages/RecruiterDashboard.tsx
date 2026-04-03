@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import UploadDropzone from "../components/UploadDropzone";
 import CandidatesTable from "../components/CandidatesTable";
 import CandidateDrawer from "../components/CandidateDrawer";
+import ResumePreviewModal, { type PreviewTarget } from "../components/ResumePreviewModal";
 import { getCandidates, uploadResumes } from "../services/hireblindApi";
 import type { CandidateRow } from "../services/hireblindApi";
 
@@ -12,12 +13,12 @@ export default function RecruiterDashboard() {
   const [uploading, setUploading] = useState(false);
   const [uploadFileNames, setUploadFileNames] = useState<string[]>([]);
   const [status, setStatus] = useState<string | null>(null);
+  const [uploadPreview, setUploadPreview] = useState<PreviewTarget | null>(null);
 
   async function refresh() {
     const rows = await getCandidates();
     setCandidates(rows);
-    // Keep selection stable when possible.
-    setSelected((prev) => (prev ? rows.find((r) => r.candidate_id === prev.candidate_id) ?? prev : null));
+    setSelected((prev) => (prev ? rows.find((r) => r.candidate_id === prev.candidate_id) ?? null : null));
   }
 
   useEffect(() => {
@@ -31,11 +32,12 @@ export default function RecruiterDashboard() {
     setUploadFileNames(files.map((f) => f.name));
     setStatus(null);
     try {
-      const ids = await uploadResumes(files, (pct) => setUploadProgress(pct));
-      setStatus(`Uploaded ${files.length} file(s). Candidate IDs: ${ids.join(", ")}`);
+      await uploadResumes(files, (pct) => setUploadProgress(pct));
+      setStatus(`Uploaded ${files.length} file(s). Ask an admin to run Process Resumes to compute scores.`);
       await refresh();
-    } catch (err: any) {
-      setStatus(err?.response?.data?.detail ?? err?.message ?? "Upload failed");
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setStatus(e?.message ?? "Upload failed");
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -51,14 +53,29 @@ export default function RecruiterDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl p-6">
+      <ResumePreviewModal target={uploadPreview} onClose={() => setUploadPreview(null)} />
       <div className="mb-4">
-        <div className="text-xl font-semibold text-slate-800">Recruiter Dashboard</div>
-        <div className="text-sm text-slate-600">Upload resumes, view ranking, anonymised candidate details, and audit actions.</div>
+        <div className="text-xl font-semibold text-slate-800">Recruiter dashboard</div>
+        <div className="text-sm text-slate-600">
+          Upload one or many PDFs/DOCX, review blind-ranked candidates, and log compliance actions.
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-1">
-          <UploadDropzone onFilesPicked={onFilesPicked} disabled={uploading} />
+          <UploadDropzone
+            onFilesPicked={onFilesPicked}
+            disabled={uploading}
+            onFilesSelected={(files) => {
+              const pdf = files.find((f) => f.name.toLowerCase().endsWith(".pdf"));
+              const docx = files.find((f) => f.name.toLowerCase().endsWith(".docx"));
+              if (pdf) {
+                setUploadPreview({ kind: "pdf", url: URL.createObjectURL(pdf), name: pdf.name });
+              } else if (docx) {
+                setUploadPreview({ kind: "docx", name: docx.name });
+              }
+            }}
+          />
           {uploading ? (
             <div className="mt-3">
               <div className="text-sm font-medium text-slate-700">Upload progress: {uploadProgress}%</div>
@@ -82,8 +99,8 @@ export default function RecruiterDashboard() {
           <div className="mt-4 rounded-lg bg-white border border-slate-200 p-4">
             <div className="text-sm font-semibold text-slate-800 mb-2">Next step</div>
             <div className="text-sm text-slate-600">
-              After upload, new candidates will appear in the ranking list. Admin must run{" "}
-              <code className="font-mono">Process Resumes</code> to compute scores.
+              After upload, candidates appear by <strong>filename</strong>. An admin must run{" "}
+              <code className="font-mono">Process Resumes</code> to compute scores from the job description.
             </div>
             <button
               className="mt-3 rounded-md bg-slate-800 px-3 py-2 text-white text-sm hover:bg-slate-700"
@@ -103,10 +120,12 @@ export default function RecruiterDashboard() {
             onUpdated={async () => {
               await refresh();
             }}
+            onDeleted={async () => {
+              setSelected(null);
+            }}
           />
         </div>
       </div>
     </div>
   );
 }
-

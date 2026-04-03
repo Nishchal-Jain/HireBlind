@@ -82,8 +82,8 @@ def _seed_candidates_and_scores(db: Session) -> None:
     if db.query(Candidate).count() == 0:
         try:
             resume_service = ResumeService(db)
-            for resume_text in SAMPLE_RESUMES:
-                resume_service.create_candidate_from_text(resume_text)
+            for i, resume_text in enumerate(SAMPLE_RESUMES):
+                resume_service.create_candidate_from_text(resume_text, upload_label=f"sample_resume_{i + 1}.pdf")
             db.commit()
         except Exception:
             # Keep server booting even if spaCy model download isn't done yet.

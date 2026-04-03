@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose.exceptions import ExpiredSignatureError, JWTError
 from sqlalchemy.orm import Session
 
 from hireblind.backend.models.user import User
@@ -26,9 +27,23 @@ def get_current_user(
 ) -> User:
     try:
         payload = decode_token(token)
-        user_id = int(payload.get("sub"))  # stored as string
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        sub = payload.get("sub")
+        if sub is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid session (missing subject). Please log in again.",
+            )
+        user_id = int(sub)
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired. Please log in again.",
+        ) from None
+    except (JWTError, ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session. Please log in again.",
+        ) from None
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
@@ -15,6 +17,17 @@ from hireblind.backend.utils.config import (
     MAX_FILES_PER_UPLOAD,
 )
 from hireblind.backend.utils.text_extraction import extract_text_from_docx, extract_text_from_pdf
+
+
+def _sanitize_upload_label(name: str | None) -> str:
+    """Keep a readable filename for UI; strip path and odd characters."""
+    if not name or not str(name).strip():
+        return "resume.pdf"
+    base = Path(str(name)).name.strip()
+    safe = re.sub(r"[^\w\.\- \u00C0-\u024F]", "_", base)
+    if len(safe) > 200:
+        safe = safe[:200]
+    return safe or "resume.pdf"
 
 
 def _candidate_letter(candidate_id: int) -> str:
@@ -40,10 +53,11 @@ class ResumeService:
         ext = Path(name).suffix.lower()
         return ext
 
-    def create_candidate_from_text(self, resume_text: str) -> int:
+    def create_candidate_from_text(self, resume_text: str, upload_label: str | None = None) -> int:
         # Create the candidate row first so we have a stable candidate_id.
         # This ensures we never need to store any original PII in the DB.
-        candidate = Candidate(anonymised_resume_text="")
+        label = _sanitize_upload_label(upload_label) if upload_label else None
+        candidate = Candidate(anonymised_resume_text="", upload_label=label)
         self.db.add(candidate)
         self.db.flush()  # Assigns candidate.id
 
@@ -53,6 +67,7 @@ class ResumeService:
             anonymised = ""  # keep schema valid; scoring will likely be 0
 
         candidate.anonymised_resume_text = anonymised
+        candidate.updated_at = datetime.now(timezone.utc)
         self.audit.log_removed_fields(candidate.id, removed_fields)
         return candidate.id
 
@@ -80,7 +95,7 @@ class ResumeService:
             if not resume_text.strip():
                 raise HTTPException(status_code=400, detail=f"Could not extract text from {upload.filename}")
 
-            candidate_ids.append(self.create_candidate_from_text(resume_text))
+            candidate_ids.append(self.create_candidate_from_text(resume_text, upload_label=upload.filename))
 
         self.db.commit()
         return candidate_ids

@@ -38,11 +38,13 @@ class CandidateService:
         if not job_description:
             raise ValueError("Job description cannot be empty")
 
+        now = datetime.now(timezone.utc)
         candidates: List[Candidate] = self.db.query(Candidate).order_by(Candidate.id.asc()).all()
         for c in candidates:
             confidence, explanation = score_resume(job_description, c.anonymised_resume_text)
             c.score = confidence
             c.explanation_json = json.dumps(explanation)
+            c.updated_at = now
             # Preserve manual overrides if recruiter changed ranking.
             if c.override_score is None:
                 c.final_score = confidence

@@ -1,10 +1,17 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { formatApiError } from "../services/api";
 import { login, signup } from "../services/auth";
 import type { AuthInfo } from "../services/storage";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionHint = useMemo(() => {
+    const s = searchParams.get("session");
+    if (s === "expired") return "Your session expired — log in again to continue.";
+    return null;
+  }, [searchParams]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<AuthInfo["role"]>("recruiter");
@@ -24,8 +31,8 @@ export default function LoginPage() {
         await signup(email.trim(), password, role);
         setMode("login");
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.detail ?? err?.message ?? "Request failed");
+    } catch (err: unknown) {
+      setError(formatApiError(err));
     } finally {
       setLoading(false);
     }
@@ -37,6 +44,12 @@ export default function LoginPage() {
         <div className="text-2xl font-semibold text-slate-800">HireBlind</div>
         <div className="mt-1 text-sm text-slate-600">Bias-free resume screening</div>
       </div>
+
+      {sessionHint ? (
+        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          {sessionHint}
+        </div>
+      ) : null}
 
       <form onSubmit={onSubmit} className="rounded-lg bg-white p-5 shadow-sm border border-slate-200">
         <div className="mb-4 flex gap-3">

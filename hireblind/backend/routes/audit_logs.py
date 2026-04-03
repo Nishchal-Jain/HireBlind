@@ -10,6 +10,7 @@ from hireblind.backend.models.audit_log import AuditLog
 from hireblind.backend.models.user import User
 from hireblind.backend.services.candidate_service import CandidateService
 from hireblind.backend.utils.auth_deps import get_db_session, require_roles
+from hireblind.backend.utils.timefmt import utc_iso
 
 
 router = APIRouter(prefix="", tags=["audit"])
@@ -36,7 +37,7 @@ def get_audit_logs(
             id=l.id,
             candidate_id=l.candidate_id,
             removed_field=l.removed_field,
-            timestamp=l.timestamp.isoformat() if l.timestamp else "",
+            timestamp=utc_iso(l.timestamp),
             details=l.details,
         )
         for l in logs

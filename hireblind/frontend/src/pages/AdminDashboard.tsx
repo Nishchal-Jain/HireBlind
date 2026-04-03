@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { formatApiError } from "../services/api";
 import { processResumes } from "../services/hireblindApi";
 
 const SAMPLE_JOB_DESCRIPTION = `We are looking for a Python/React engineer to build bias-free resume screening tools.
@@ -16,8 +17,8 @@ export default function AdminDashboard() {
     try {
       await processResumes(jobDescription);
       setStatus("Done: candidates scored successfully.");
-    } catch (err: any) {
-      setStatus(err?.response?.data?.detail ?? err?.message ?? "Failed");
+    } catch (err: unknown) {
+      setStatus(formatApiError(err));
     } finally {
       setLoading(false);
     }

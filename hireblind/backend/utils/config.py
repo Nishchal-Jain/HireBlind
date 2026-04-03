@@ -10,7 +10,8 @@ DB_PATH = Path(os.environ.get("HIREBLIND_DB_PATH", str(PROJECT_ROOT / "hireblind
 
 JWT_SECRET = os.environ.get("HIREBLIND_JWT_SECRET", "dev-secret-change-me")
 JWT_ALGORITHM = os.environ.get("HIREBLIND_JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("HIREBLIND_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+# Longer default avoids "Invalid token" / ExpiredSignature during normal demo use (override via env).
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("HIREBLIND_ACCESS_TOKEN_EXPIRE_MINUTES", "720"))
 
 # Upload limits (hackathon-friendly defaults).
 MAX_FILES_PER_UPLOAD = int(os.environ.get("HIREBLIND_MAX_FILES_PER_UPLOAD", "10"))
