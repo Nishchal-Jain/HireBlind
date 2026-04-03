@@ -2,6 +2,8 @@
 
 Mini SaaS for **bias-free resume screening**.
 
+**Clone:** `git clone https://github.com/Nishchal-Jain/HireBlind.git` — then install deps (see below); do not commit `node_modules` or `.venv`.
+
 - **Frontend:** React (Vite) + Tailwind
 - **Backend:** Python FastAPI
 - **DB:** SQLite
