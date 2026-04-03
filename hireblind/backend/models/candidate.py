@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from sqlalchemy import DateTime, ForeignKey, Integer, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from hireblind.backend.utils.db import Base
+
+
+class Candidate(Base):
+    __tablename__ = "candidates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    anonymised_resume_text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Scoring fields
+    score: Mapped[int | None] = mapped_column(Integer, nullable=True)  # computed score
+    explanation_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON string list of tags
+    final_score: Mapped[int | None] = mapped_column(Integer, nullable=True)  # score or recruiter override
+    override_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    audit_logs = relationship("AuditLog", back_populates="candidate", cascade="all, delete-orphan")
+
