@@ -43,4 +43,6 @@ def _startup() -> None:
     init_db()
     if SEED_DEMO:
         seed_if_needed()
+    else:
+        print("No seeding needed")
 
