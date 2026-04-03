@@ -1,5 +1,7 @@
 # HireBlind
 
+# Testing New Things in GITHUB
+
 Mini SaaS for **bias-free resume screening**.
 
 **Clone:** `git clone https://github.com/Nishchal-Jain/HireBlind.git` — then install deps (see below); do not commit `node_modules` or `.venv`.
@@ -102,5 +104,5 @@ python -m spacy download en_core_web_sm
 - `GET /get-candidates`
 - `GET /get-audit-logs?candidate_id=...`
 - `POST /update-ranking` (recruiter only)
-## TEST
 
+## TEST
